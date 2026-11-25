@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Panel — PeluangKu</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            display: ['Plus Jakarta Sans', 'Inter', 'sans-serif'],
+          }
+        }
+      }
+    };
+  </script>
+</head>
+<body class="bg-[#F9FAFB] text-[#111827] font-sans antialiased min-h-screen">
+
+  <!-- ==================== 1. LOGIN ADMIN VIEW ==================== -->
+  <div id="admin-login-view" class="min-h-screen flex items-center justify-center p-4">
+    <div class="w-full max-w-md bg-white rounded-3xl p-8 shadow-sm border border-[#E5E7EB]">
+      <div class="flex flex-col items-center text-center mb-6">
+        <div class="w-14 h-14 rounded-2xl bg-[#111827] text-white flex items-center justify-center mb-3">
+          <i data-lucide="shield-check" class="w-7 h-7"></i>
+        </div>
+        <h1 class="font-display font-extrabold text-2xl text-[#111827]">PeluangKu Admin</h1>
+        <p class="text-xs text-[#6B7280] mt-1">Masuk dengan akun admin untuk mengelola daftar lomba, beasiswa & magang.</p>
+      </div>
+
+      <div id="login-alert" class="hidden mb-4 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-medium"></div>
+
+      <form id="admin-login-form" onsubmit="handleAdminLogin(event)" class="space-y-3.5">
+        <div>
+          <label class="text-[11px] font-bold text-[#374151]">Email Admin</label>
+          <input id="adm-email" type="email" required placeholder="admin@email.com" class="w-full mt-1 bg-[#F9FAFB] border border-[#E5E7EB] focus:border-[#111827] focus:bg-white rounded-xl px-4 py-3 text-xs outline-none transition" />
+        </div>
+        <div>
+          <label class="text-[11px] font-bold text-[#374151]">Password</label>
+          <input id="adm-pass" type="password" required placeholder="••••••••" class="w-full mt-1 bg-[#F9FAFB] border border-[#E5E7EB] focus:border-[#111827] focus:bg-white rounded-xl px-4 py-3 text-xs outline-none transition" />
+        </div>
+        <button id="adm-login-btn" type="submit" class="w-full bg-[#111827] hover:bg-[#374151] text-white font-display font-bold text-sm py-3.5 rounded-xl transition mt-2">
+          Masuk ke Dashboard Admin
+        </button>
+      </form>
+
+      <div class="mt-6 pt-4 border-t border-[#E5E7EB] flex items-center justify-between text-xs text-[#6B7280]">
+        <a href="index.html" class="hover:text-[#111827] font-semibold">← Kembali ke Website</a>
+        <span id="db-status-badge" class="font-semibold">Memeriksa koneksi...</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 2. ADMIN DASHBOARD VIEW ==================== -->
+  <div id="admin-dashboard-view" class="hidden min-h-screen flex flex-col">
+    <header class="sticky top-0 z-30 bg-white border-b border-[#E5E7EB]">
+      <div class="max-w-6xl mx-auto px-4 sm:px-8 h-16 flex items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl bg-[#111827] text-white flex items-center justify-center">
+            <i data-lucide="shield-check" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <span class="font-display font-extrabold text-base text-[#111827] block leading-none">PeluangKu Admin</span>
+            <span id="admin-user-email" class="text-[11px] text-[#6B7280] block mt-0.5">-</span>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2.5">
+          <a href="index.html" target="_blank" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-[#E5E7EB] text-xs font-bold text-[#111827] hover:bg-[#F3F4F6] transition">
+            <span>Lihat Web</span>
+            <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+          </a>
+          <button onclick="handleAdminLogout()" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#F3F4F6] hover:bg-gray-200 text-xs font-bold text-[#111827] transition">
+            <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
+            <span>Keluar</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-6xl w-full mx-auto px-4 sm:px-8 py-6 space-y-6 flex-1">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-[#E5E7EB]">
+        <div>
+          <h2 class="font-display font-extrabold text-lg text-[#111827]">Kelola Daftar Peluang</h2>
+          <p class="text-xs text-[#6B7280] mt-0.5">Total <strong id="total-opps-count" class="text-[#111827]">0</strong> peluang tersimpan di database Supabase.</p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2.5">
+          <button onclick="openOppFormModal()" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#111827] hover:bg-[#374151] text-white text-xs font-bold shadow-sm transition">
+            <i data-lucide="plus" class="w-4 h-4"></i>
+            <span>Tambah Peluang Baru</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="flex flex-col sm:flex-row gap-3">
+        <div class="flex-1 bg-white rounded-xl px-3.5 py-2.5 border border-[#E5E7EB] flex items-center gap-2">
+          <i data-lucide="search" class="w-4 h-4 text-[#9CA3AF]"></i>
+          <input id="admin-search" type="text" oninput="renderAdminList()" placeholder="Cari judul atau penyelenggara..." class="w-full text-xs bg-transparent outline-none" />
+        </div>
+        <select id="admin-cat-filter" onchange="renderAdminList()" class="bg-white rounded-xl px-3.5 py-2.5 border border-[#E5E7EB] text-xs font-semibold outline-none">
+          <option value="Semua">Semua Kategori</option>
+          <option value="Lomba">Lomba</option>
+          <option value="Beasiswa">Beasiswa</option>
+          <option value="Magang">Magang</option>
+          <option value="Webinar">Webinar</option>
+          <option value="Relawan">Relawan</option>
+        </select>
+      </div>
+
+      <div id="admin-opps-list" class="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+        <div class="col-span-full bg-white rounded-2xl p-8 text-center border border-[#E5E7EB] text-xs text-[#6B7280]">
+          Memuat data dari Supabase...
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ==================== 3. MODAL TAMBAH / EDIT PELUANG + CROPPER + CLOUDINARY ==================== -->
+  <div id="opp-modal" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-[2px] hidden items-center justify-center p-4">
+    <div class="bg-white w-full max-w-2xl rounded-3xl border border-[#E5E7EB] shadow-2xl max-h-[90vh] flex flex-col overflow-hidden">
+      <div class="px-6 py-4 border-b border-[#E5E7EB] flex items-center justify-between">
+        <h3 id="modal-title" class="font-display font-extrabold text-base text-[#111827]">Tambah Peluang Baru</h3>
+        <button onclick="closeOppModal()" class="w-8 h-8 rounded-full bg-[#F3F4F6] flex items-center justify-center text-[#111827]">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <form id="opp-form" onsubmit="handleSaveOpportunity(event)" class="p-6 overflow-y-auto space-y-4 text-xs">
+        <input type="hidden" id="f-id" />
+
+        <!-- Upload, Crop & Kompres WebP ke Cloudinary -->
+        <div class="bg-[#F9FAFB] border border-[#E5E7EB] rounded-2xl p-4 space-y-3">
+          <div class="flex flex-wrap items-center justify-between gap-1">
+            <label class="font-bold text-[#111827] flex items-center gap-1.5">
+              <i data-lucide="image" class="w-4 h-4"></i>
+              <span>Poster / Gambar Acara (Auto WebP)</span>
+            </label>
+            <span id="upload-status-text" class="text-[11px] font-semibold text-[#6B7280]">Opsional (jika kosong memakai ikon bawaan)</span>
+          </div>
+
+          <!-- Area Crop Gambar -->
+          <div id="cropper-panel" class="hidden bg-white border border-[#E5E7EB] rounded-2xl p-3 space-y-3">
+            <div class="w-full h-60 bg-[#0F172A] rounded-xl overflow-hidden">
+              <img id="cropper-target-img" class="max-w-full block" alt="Crop Gambar" />
+            </div>
+
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div class="flex items-center gap-1">
+                <button type="button" onclick="setCropRatio(16/9)" class="px-2.5 py-1 rounded-lg bg-[#F3F4F6] hover:bg-gray-200 font-bold text-[11px]">16:9 Banner</button>
+                <button type="button" onclick="setCropRatio(4/3)" class="px-2.5 py-1 rounded-lg bg-[#F3F4F6] hover:bg-gray-200 font-bold text-[11px]">4:3</button>
+                <button type="button" onclick="setCropRatio(1)" class="px-2.5 py-1 rounded-lg bg-[#F3F4F6] hover:bg-gray-200 font-bold text-[11px]">1:1</button>
+                <button type="button" onclick="setCropRatio(NaN)" class="px-2.5 py-1 rounded-lg bg-[#F3F4F6] hover:bg-gray-200 font-bold text-[11px]">Bebas</button>
+                <button type="button" onclick="rotateCropImage()" title="Putar 90°" class="p-1.5 rounded-lg bg-[#F3F4F6] hover:bg-gray-200">
+                  <i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
+
+              <div class="flex items-center gap-1.5">
+                <button type="button" onclick="cancelCropper()" class="px-3 py-1.5 rounded-xl border border-[#E5E7EB] font-semibold text-[#374151]">
+                  Batal
+                </button>
+                <button type="button" id="crop-upload-btn" onclick="cropCompressAndUpload()" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#111827] hover:bg-[#374151] text-white font-bold">
+                  <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                  <span>Potong & Upload WebP</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Preview Hasil Upload -->
+          <div id="preview-panel" class="flex flex-col sm:flex-row items-center gap-3.5">
+            <div id="img-preview-box" class="w-full sm:w-40 h-24 rounded-xl bg-[#111827] text-white/60 flex items-center justify-center overflow-hidden shrink-0 border border-[#E5E7EB]">
+              <span class="text-[11px]">Belum ada gambar</span>
+            </div>
+
+            <div class="flex-1 w-full space-y-2">
+              <div class="flex flex-wrap items-center gap-2">
+                <label class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#111827] hover:bg-[#374151] text-white font-bold cursor-pointer transition">
+                  <i data-lucide="crop" class="w-4 h-4"></i>
+                  <span>Pilih & Crop Gambar</span>
+                  <input id="f-image-file" type="file" accept="image/*" onchange="openImageCropper(this)" class="hidden" />
+                </label>
+                <button type="button" onclick="clearImageField()" class="px-3 py-2 rounded-xl border border-[#E5E7EB] bg-white hover:bg-gray-100 font-semibold text-[#374151]">
+                  Hapus
+                </button>
+              </div>
+              <input id="f-image-url" type="url" oninput="updateImagePreview(this.value)" placeholder="Atau tempel link gambar langsung (https://res.cloudinary.com/...)" class="w-full bg-white border border-[#E5E7EB] focus:border-[#111827] rounded-xl px-3 py-2 text-[11px] outline-none" />
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div class="sm:col-span-2">
+            <label class="font-bold text-[#374151]">Judul Acara / Peluang *</label>
+            <input id="f-title" type="text" required placeholder="Contoh: Lomba UI/UX Nasional 2026" class="w-full mt-1 bg-[#F9FAFB] border border-[#E5E7EB] focus:border-[#111827] rounded-xl px-3.5 py-2.5 outline-none" />
+          </div>
+          <div>
+            <label class="font-bold text-[#374151]">Kategori *</label>
+            <select id="f-category" required class="w-full mt-1 bg-[#F9FAFB] border border-[#E5E7EB] focus:border-[#111827] rounded-xl px-3.5 py-2.5 outline-none font-semibold">
+              <option value="Lomba">Lomba</option>
+              <option value="Beasiswa">Beasiswa</option>
+              <option value="Magang">Magang</option>
+              <option value="Webinar">Webinar</option>
+              <option value="Relawan">Relawan</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="font-bold text-[#374151]">Penyelenggara *</label>
+          <input id="f-organizer" type="text" required placeholder="Contoh: Kemendikbud / HIMA Informatika" class="w-full mt-1 bg-[#F9FAFB] border border-[#E5E7EB] focus:border-[#111827] rounded-xl px-3.5 py-2.5 outline-none" />
+        </div>
+
+        <!-- RENTANG TANGGAL (MULAI - DEADLINE / SELESAI) -->
+        <div class="bg-[#F9FAFB] border border-[#E5E7EB] rounded-2xl p-3.5 space-y-2.5">
+          <div class="flex flex-wrap items-center justify-between gap-1">
+            <label class="font-bold text-[#111827] flex items-center gap-1.5">
+              <i data-lucide="calendar-range" class="w-4 h-4"></i>
+              <span>Periode Pendaftaran / Jadwal Acara</span>
+            </label>
+            <span id="date-range-preview" class="text-[11px] font-bold text-[#111827] bg-white border border-[#E5E7EB] px-2.5 py-0.5 rounded-full">
+              Pilih tanggal di bawah
+            </span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="text-[11px] font-bold text-[#374151]">Tanggal Mulai (Opsional)</label>
+              <input id="f-start-date" type="date" onchange="syncDateRangeInputs()" class="w-full mt-1 bg-white border border-[#E5E7EB] focus:border-[#111827] rounded-xl px-3.5 py-2.5 outline-none" />
+            </div>
+            <div>
+              <label class="text-[11px] font-bold text-[#374151]">Tanggal Selesai / Deadline *</label>
+              <input id="f-deadline-date" type="date" required onchange="syncDateRangeInputs()" class="w-full mt-1 bg-white border border-[#E5E7EB] focus:border-[#111827] rounded-xl px-3.5 py-2.5 outline-none" />
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <div>
+            <label class="font-bold text-[#374151]">Mode Pelaksanaan</label>
+            <select id="f-mode" class="w-full mt-1 bg-[#F9FAFB] border border-[#E5E7EB] focus:border-[#111827] rounded-xl px-3.5 py-2.5 outline-none font-semibold">
+              <option value="Online">Online</option>
+              <option value="Hybrid">Hybrid</option>
+              <option value="Onsite">Onsite</option>
+            </select>
+          </div>
+          <div>
+            <label class="font-bold text-[#374151]">Jenis Biaya</label>
+            <select id="f-fee-type" class="w-full mt-1 bg-[#F9FAFB] border border-[#E5E7EB] focus:border-[#111827] rounded-xl px-3.5 py-2.5 outline-none font-semibold">
+              <option value="Gratis">Gratis</option>
+              <option value="Berbayar">Berbayar</option>
+            </select>
+          </div>
+          <div class="col-span-2 sm:col-span-1">
+            <label class="font-bold text-[#374151]">Jenjang Mahasiswa</label>
+            <div class="flex items-center gap-4 mt-2.5">
+              <label class="inline-flex items-center gap-1.5 font-semibold cursor-pointer">
+                <input id="f-lvl-s1" type="checkbox" checked class="accent-[#111827]" /> S1
+              </label>
+              <label class="inline-flex items-center gap-1.5 font-semibold cursor-pointer">
+                <input id="f-lvl-d3" type="checkbox" checked class="accent-[#111827]" /> D3
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="font-bold text-[#374151]">Benefit Singkat (di Kartu) *</label>
+            <input id="f-benefit-short" type="text" required placeholder="Contoh: Total Hadiah Rp 25 Juta" class="w-full mt-1 bg-[#F9FAFB] border border-[#E5E7EB] focus:border-[#111827] rounded-xl px-3.5 py-2.5 outline-none" />
+          </div>
+          <div>
+            <label class="font-bold text-[#374151]">Label Biaya & Benefit (di Detail) *</label>
+            <input id="f-fee-label" type="text" required placeholder="Contoh: Gratis • Total Hadiah Rp 25 Jt" class="w-full mt-1 bg-[#F9FAFB] border border-[#E5E7EB] focus:border-[#111827] rounded-xl px-3.5 py-2.5 outline-none" />
+          </div>
+        </div>
+
+        <div>
+          <label class="font-bold text-[#374151]">Link Pendaftaran Resmi / WhatsApp *</label>
+          <input id="f-register-url" type="url" required placeholder="https://forms.gle/... atau https://wa.me/628..." class="w-full mt-1 bg-[#F9FAFB] border border-[#E5E7EB] focus:border-[#111827] rounded-xl px-3.5 py-2.5 outline-none" />
+        </div>
+
+        <div>
+          <label class="font-bold text-[#374151]">Deskripsi Program *</label>
+          <textarea id="f-description" rows="3" required placeholder="Jelaskan gambaran singkat acara, lomba, atau beasiswa ini..." class="w-full mt-1 bg-[#F9FAFB] border border-[#E5E7EB] focus:border-[#111827] rounded-xl px-3.5 py-2.5 outline-none"></textarea>
+        </div>
+
+        <div>
+          <label class="font-bold text-[#374151]">Persyaratan Utama (1 baris = 1 poin)</label>
+          <textarea id="f-requirements" rows="3" placeholder="Mahasiswa aktif S1/D3 seluruh Indonesia&#10;Melampirkan KTM aktif&#10;Karya orisinal" class="w-full mt-1 bg-[#F9FAFB] border border-[#E5E7EB] focus:border-[#111827] rounded-xl px-3.5 py-2.5 outline-none"></textarea>
+        </div>
+
+        <!-- TIMELINE KEGIATAN INTERAKTIF (PILIHAN OTOMATIS + INPUT MUDAH) -->
+        <div class="bg-[#F9FAFB] border border-[#E5E7EB] rounded-2xl p-3.5 space-y-2.5">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <label class="font-bold text-[#111827] flex items-center gap-1.5">
+              <i data-lucide="list-checks" class="w-4 h-4"></i>
+              <span>Timeline Kegiatan (Opsional)</span>
+            </label>
+            <div class="flex items-center gap-1.5">
+              <button type="button" onclick="autoGenerateTimeline()" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#111827] hover:bg-[#374151] text-white text-[11px] font-bold transition">
+                <i data-lucide="sparkles" class="w-3 h-3"></i>
+                <span>Auto-Isi Timeline</span>
+              </button>
+              <button type="button" onclick="clearTimelineRows()" class="px-2 py-1 rounded-lg border border-[#E5E7EB] bg-white hover:bg-gray-100 text-[11px] font-semibold text-[#6B7280]">
+                Kosongkan
+              </button>
+            </div>
+          </div>
+
+          <!-- Tombol Tambah Tahap Cepat -->
+          <div class="flex flex-wrap items-center gap-1.5">
+            <span class="text-[10px] font-semibold text-[#6B7280]">Tambah cepat:</span>
+            <button type="button" onclick="quickAddTimelineStage('Pendaftaran Online')" class="px-2 py-0.5 rounded-md bg-white border border-[#E5E7EB] hover:border-[#111827] text-[10px] font-semibold text-[#374151]">+ Pendaftaran</button>
+            <button type="button" onclick="quickAddTimelineStage('Technical Meeting')" class="px-2 py-0.5 rounded-md bg-white border border-[#E5E7EB] hover:border-[#111827] text-[10px] font-semibold text-[#374151]">+ Technical Meeting</button>
+            <button type="button" onclick="quickAddTimelineStage('Seleksi / Penjurian')" class="px-2 py-0.5 rounded-md bg-white border border-[#E5E7EB] hover:border-[#111827] text-[10px] font-semibold text-[#374151]">+ Penjurian</button>
+            <button type="button" onclick="quickAddTimelineStage('Final / Presentasi')" class="px-2 py-0.5 rounded-md bg-white border border-[#E5E7EB] hover:border-[#111827] text-[10px] font-semibold text-[#374151]">+ Final</button>
+            <button type="button" onclick="quickAddTimelineStage('Pengumuman Juara')" class="px-2 py-0.5 rounded-md bg-white border border-[#E5E7EB] hover:border-[#111827] text-[10px] font-semibold text-[#374151]">+ Pengumuman</button>
+            <button type="button" onclick="addTimelineRow('', '')" class="px-2 py-0.5 rounded-md bg-white border border-[#E5E7EB] hover:border-[#111827] text-[10px] font-bold text-[#111827]">+ Baris Kosong</button>
+          </div>
+
+          <!-- Daftar Baris Timeline -->
+          <div id="timeline-rows-container" class="space-y-2">
+            <!-- Baris dirender otomatis lewat JS -->
+          </div>
+        </div>
+
+        <div class="flex items-center gap-6 pt-1">
+          <label class="inline-flex items-center gap-2 font-semibold cursor-pointer">
+            <input id="f-featured" type="checkbox" class="accent-[#111827]" /> Tampilkan di Peluang Pilihan
+          </label>
+          <label class="inline-flex items-center gap-2 font-semibold cursor-pointer">
+            <input id="f-popular" type="checkbox" checked class="accent-[#111827]" /> Tampilkan di Terbaru & Populer
+          </label>
+        </div>
+
+        <div class="pt-3 border-t border-[#E5E7EB] flex justify-end gap-2.5">
+          <button type="button" onclick="closeOppModal()" class="px-5 py-2.5 rounded-xl border border-[#E5E7EB] font-bold text-[#374151]">Batal</button>
+          <button id="f-submit-btn" type="submit" class="px-6 py-2.5 rounded-xl bg-[#111827] hover:bg-[#374151] text-white font-display font-bold">Simpan ke Database</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="admin-toast" class="fixed top-5 left-1/2 -translate-x-1/2 z-[60] pointer-events-none opacity-0 -translate-y-3 transition-all duration-300">
+    <div class="bg-[#111827] text-white px-4 py-2.5 rounded-2xl shadow-xl text-xs font-semibold flex items-center gap-2">
+      <span id="toast-dot">✓</span>
+      <span id="admin-toast-msg">Tersimpan</span>
+    </div>
+  </div>
+
+  <script src="assets.js"></script>
+  <script src="data.js"></script>
+  <script>
+    let sb = null;
+    let adminOpportunities = [];
+    let activeCropper = null;
+    let timelineItems = [];
+
+    if (typeof window.supabase !== 'undefined' && typeof SUPABASE_CONFIG !== 'undefined' && SUPABASE_CONFIG.url && SUPABASE_CONFIG.anonKey) {
+      sb = window.supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey);
+      document.getElementById('db-status-badge').textContent = '● Supabase Terhubung';
+      document.getElementById('db-status-badge').classList.add('text-emerald-600');
+    } else {
+      document.getElementById('db-status-badge').textContent = '● Config belum diisi';
+      document.getElementById('db-status-badge').classList.add('text-red-600');
+    }
+
+    function showAdminToast(msg, icon = '✓') {
+      const t = document.getElementById('admin-toast');
+      document.getElementById('admin-toast-msg').textContent = msg;
+      document.getElementById('toast-dot').textContent = icon;
+      t.classList.remove('opacity-0', '-translate-y-3');
+      t.classList.add('opacity-100', 'translate-y-0');
+      setTimeout(() => {
+        t.classList.add('opacity-0', '-translate-y-3');
+        t.classList.remove('opacity-100', 'translate-y-0');
+      }, 2800);
+    }
+
+    const INDO_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+
+    function formatIndoDate(isoDate) {
+      if (!isoDate) return '-';
+      const parts = String(isoDate).split('-');
+      if (parts.length !== 3) return isoDate;
+      return `${parseInt(parts[2], 10)} ${INDO_MONTHS[parseInt(parts[1], 10) - 1] || ''} ${parts[0]}`;
+    }
+
+    function addDaysToIso(isoDate, daysToAdd) {
+      if (!isoDate) return '';
+      const d = new Date(isoDate + 'T00:00:00');
+      if (isNaN(d.getTime())) return '';
+      d.setDate(d.getDate() + daysToAdd);
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    }
+
+    function formatIndoDateRange(startIso, endIso) {
+      if (!endIso && !startIso) return '-';
+      if (!startIso || startIso === endIso) return formatIndoDate(endIso || startIso);
+      if (!endIso) return formatIndoDate(startIso);
+
+      const s = startIso.split('-');
+      const e = endIso.split('-');
+      if (s.length !== 3 || e.length !== 3) return `${formatIndoDate(startIso)} - ${formatIndoDate(endIso)}`;
+
+      const sDay = parseInt(s[2], 10);
+      const sMon = INDO_MONTHS[parseInt(s[1], 10) - 1] || '';
+      const sYear = s[0];
+
+      const eDay = parseInt(e[2], 10);
+      const eMon = INDO_MONTHS[parseInt(e[1], 10) - 1] || '';
+      const eYear = e[0];
+
+      if (sYear === eYear && sMon === eMon) {
+        return `${sDay} - ${eDay} ${eMon} ${eYear}`;
+      }
+      if (sYear === eYear) {
+        return `${sDay} ${sMon} - ${eDay} ${eMon} ${eYear}`;
+      }
+      return `${sDay} ${sMon} ${sYear} - ${eDay} ${eMon} ${eYear}`;
+    }
+
+    function syncDateRangeInputs() {
+      const startEl = document.getElementById('f-start-date');
+      const endEl = document.getElementById('f-deadline-date');
+      const previewEl = document.getElementById('date-range-preview');
+
+      if (startEl.value) {
+        endEl.min = startEl.value;
+        if (endEl.value && endEl.value < startEl.value) {
+          endEl.value = startEl.value;
+        }
+      } else {
+        endEl.removeAttribute('min');
+      }
+
+      if (startEl.value || endEl.value) {
+        previewEl.textContent = formatIndoDateRange(startEl.value, endEl.value);
+      } else {
+        previewEl.textContent = 'Pilih tanggal di bawah';
+      }
+    }
+
+    function parseStartIsoFromDeadlineLabel(label, endIso) {
+      if (!label || !endIso || !label.includes('-')) return '';
+      const parts = label.split('-').map(s => s.trim());
+      if (parts.length !== 2) return '';
+      const leftTokens = parts[0].split(/\s+/);
+      const endParts = endIso.split('-');
+      if (endParts.length !== 3) return '';
+
+      const day = parseInt(leftTokens[0], 10);
+      if (isNaN(day)) return '';
+
+      let monthIdx = parseInt(endParts[1], 10) - 1;
+      if (leftTokens[1]) {
+        const foundMon = INDO_MONTHS.findIndex(m => m.toLowerCase() === leftTokens[1].toLowerCase());
+        if (foundMon !== -1) monthIdx = foundMon;
+      }
+      const year = leftTokens[2] && /^\d{4}$/.test(leftTokens[2]) ? leftTokens[2] : endParts[0];
+      return `${year}-${String(monthIdx + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    }
+
+    function calcDaysLeft(isoDate) {
+      if (!isoDate) return 7;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const target = new Date(isoDate + 'T00:00:00');
+      return isNaN(target.getTime()) ? 7 : Math.ceil((target - today) / (1000 * 60 * 60 * 24));
+    }
+
+    function escapeHtml(str) {
+      return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function escapeAttr(str) {
+      return String(str || '').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    // ==================== TIMELINE BUILDER INTERAKTIF ====================
+    function renderTimelineRows() {
+      const container = document.getElementById('timeline-rows-container');
+      if (!container) return;
+
+      if (timelineItems.length === 0) {
+        container.innerHTML = `
+          <div class="text-center py-3 px-4 rounded-xl border border-dashed border-[#D1D5DB] bg-white text-[11px] text-[#6B7280]">
+            Belum ada timeline. Klik <strong>Auto-Isi Timeline</strong> atau tombol tahap di atas.
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = timelineItems.map((row, idx) => `
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 bg-white p-2 rounded-xl border border-[#E5E7EB]">
+          <input
+            type="text"
+            value="${escapeAttr(row.stage)}"
+            oninput="updateTimelineRow(${idx}, 'stage', this.value)"
+            placeholder="Nama tahap (misal: Pendaftaran)"
+            class="flex-1 bg-[#F9FAFB] border border-[#E5E7EB] focus:border-[#111827] rounded-lg px-2.5 py-2 text-[11px] font-semibold outline-none"
+          />
+
+          <div class="flex items-center gap-1.5 sm:w-52">
+            <input
+              id="tl-date-text-${idx}"
+              type="text"
+              value="${escapeAttr(row.date)}"
+              oninput="updateTimelineRow(${idx}, 'date', this.value)"
+              placeholder="Tanggal (misal: 15 Des 2026)"
+              class="w-full bg-[#F9FAFB] border border-[#E5E7EB] focus:border-[#111827] rounded-lg px-2.5 py-2 text-[11px] outline-none"
+            />
+            <label title="Pilih dari kalender" class="w-8 h-8 rounded-lg bg-[#F3F4F6] hover:bg-gray-200 flex items-center justify-center cursor-pointer shrink-0 relative overflow-hidden">
+              <i data-lucide="calendar" class="w-3.5 h-3.5 text-[#111827]"></i>
+              <input type="date" onchange="applyPickedDateToTimeline(${idx}, this.value)" class="opacity-0 absolute inset-0 w-full h-full cursor-pointer" />
+            </label>
+            <button type="button" onclick="removeTimelineRow(${idx})" title="Hapus tahap" class="w-8 h-8 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 flex items-center justify-center shrink-0">
+              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+        </div>
+      `).join('');
+      lucide.createIcons();
+    }
+
+    function addTimelineRow(stage = '', date = '') {
+      timelineItems.push({ stage, date });
+      renderTimelineRows();
+    }
+
+    function updateTimelineRow(idx, field, val) {
+      if (timelineItems[idx]) {
+        timelineItems[idx][field] = val;
+      }
+    }
+
+    function applyPickedDateToTimeline(idx, isoDate) {
+      if (!isoDate || !timelineItems[idx]) return;
+      const formatted = formatIndoDate(isoDate);
+      timelineItems[idx].date = formatted;
+      const inputEl = document.getElementById(`tl-date-text-${idx}`);
+      if (inputEl) inputEl.value = formatted;
+    }
+
+    function removeTimelineRow(idx) {
+      timelineItems.splice(idx, 1);
+      renderTimelineRows();
+    }
+
+    function clearTimelineRows() {
+      timelineItems = [];
+      renderTimelineRows();
+    }
+
+    function quickAddTimelineStage(stageName) {
+      const startIso = document.getElementById('f-start-date').value;
+      const endIso = document.getElementById('f-deadline-date').value;
+      let defaultDate = '';
+
+      if (/pendaftaran/i.test(stageName) && (startIso || endIso)) {
+        defaultDate = formatIndoDateRange(startIso, endIso);
+      } else if (endIso) {
+        const offset = /technical/i.test(stageName) ? 2 : /seleksi|penjurian/i.test(stageName) ? 5 : /final/i.test(stageName) ? 10 : 14;
+        defaultDate = formatIndoDate(addDaysToIso(endIso, offset));
+      }
+
+      addTimelineRow(stageName, defaultDate);
+    }
+
+    function autoGenerateTimeline() {
+      const cat = document.getElementById('f-category').value;
+      const startIso = document.getElementById('f-start-date').value;
+      const endIso = document.getElementById('f-deadline-date').value;
+
+      const regRange = (startIso || endIso) ? formatIndoDateRange(startIso, endIso) : 'Segera Dibuka';
+      const dPlus3 = endIso ? formatIndoDate(addDaysToIso(endIso, 3)) : 'Menyusul';
+      const dPlus7 = endIso ? formatIndoDate(addDaysToIso(endIso, 7)) : 'Menyusul';
+      const dPlus14 = endIso ? formatIndoDate(addDaysToIso(endIso, 14)) : 'Menyusul';
+
+      if (cat === 'Beasiswa') {
+        timelineItems = [
+          { stage: 'Pendaftaran & Upload Berkas', date: regRange },
+          { stage: 'Seleksi Administrasi', date: dPlus3 },
+          { stage: 'Wawancara / Tes Substansi', date: dPlus7 },
+          { stage: 'Pengumuman Penerima Beasiswa', date: dPlus14 }
+        ];
+      } else if (cat === 'Magang') {
+        timelineItems = [
+          { stage: 'Pengiriman CV & Portofolio', date: regRange },
+          { stage: 'Screening & Interview HR', date: dPlus7 },
+          { stage: 'Pengumuman Lolos Magang', date: dPlus14 }
+        ];
+      } else if (cat === 'Webinar' || cat === 'Relawan') {
+        timelineItems = [
+          { stage: 'Pendaftaran Peserta', date: regRange },
+          { stage: 'Pelaksanaan Kegiatan', date: dPlus3 }
+        ];
+      } else {
+        timelineItems = [
+          { stage: 'Pendaftaran & Pengumpulan Karya', date: regRange },
+          { stage: 'Penjurian / Seleksi Finalis', date: dPlus7 },
+          { stage: 'Pengumuman Juara', date: dPlus14 }
+        ];
+      }
+
+      renderTimelineRows();
+      showAdminToast('Timeline otomatis dibuat! Bisa diedit kalau perlu.');
+    }
+
+    // ==================== IMAGE PREVIEW & CROPPER ====================
+    function updateImagePreview(url) {
+      const box = document.getElementById('img-preview-box');
+      if (url && url.trim()) {
+        box.innerHTML = `<img src="${url.trim()}" alt="Preview" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='<span class=\\'text-[10px] text-red-300\\'>Link gambar tidak valid</span>'" />`;
+      } else {
+        box.innerHTML = '<span class="text-[11px]">Belum ada gambar</span>';
+      }
+    }
+
+    function clearImageField() {
+      cancelCropper();
+      document.getElementById('f-image-url').value = '';
+      document.getElementById('f-image-file').value = '';
+      document.getElementById('upload-status-text').textContent = 'Gambar dihapus (memakai ikon bawaan)';
+      document.getElementById('upload-status-text').className = 'text-[11px] font-semibold text-[#6B7280]';
+      updateImagePreview('');
+    }
+
+    function openImageCropper(input) {
+      const file = input.files && input.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const imgEl = document.getElementById('cropper-target-img');
+        imgEl.src = e.target.result;
+
+        document.getElementById('preview-panel').classList.add('hidden');
+        document.getElementById('cropper-panel').classList.remove('hidden');
+        document.getElementById('upload-status-text').textContent = 'Sesuaikan posisi & ukuran potong gambar';
+        document.getElementById('upload-status-text').className = 'text-[11px] font-bold text-[#111827]';
+
+        if (activeCropper) {
+          activeCropper.destroy();
+          activeCropper = null;
+        }
+
+        activeCropper = new Cropper(imgEl, {
+          aspectRatio: 16 / 9,
+          viewMode: 1,
+          dragMode: 'move',
+          autoCropArea: 0.92,
+          responsive: true,
+          background: false
+        });
+        lucide.createIcons();
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function setCropRatio(ratio) {
+      if (activeCropper) activeCropper.setAspectRatio(ratio);
+    }
+
+    function rotateCropImage() {
+      if (activeCropper) activeCropper.rotate(90);
+    }
+
+    function cancelCropper() {
+      if (activeCropper) {
+        activeCropper.destroy();
+        activeCropper = null;
+      }
+      document.getElementById('f-image-file').value = '';
+      document.getElementById('cropper-panel').classList.add('hidden');
+      document.getElementById('preview-panel').classList.remove('hidden');
+    }
+
+    function compressCanvasToWebP(canvas, maxBytes = 130 * 1024) {
+      return new Promise((resolve) => {
+        let quality = 0.85;
+        const step = () => {
+          canvas.toBlob((blob) => {
+            if (!blob) return resolve(null);
+            if (blob.size <= maxBytes || quality <= 0.45) {
+              resolve(blob);
+            } else {
+              quality = Math.max(0.45, quality - 0.1);
+              step();
+            }
+          }, 'image/webp', quality);
+        };
+        step();
+      });
+    }
+
+    async function cropCompressAndUpload() {
+      if (!activeCropper) return;
+
+      if (typeof CLOUDINARY_CONFIG === 'undefined' || !CLOUDINARY_CONFIG.cloudName || CLOUDINARY_CONFIG.cloudName.includes('ISI_')) {
+        showAdminToast('Isi CLOUDINARY_CONFIG di data.js dulu!', '!');
+        return;
+      }
+
+      const cropBtn = document.getElementById('crop-upload-btn');
+      const submitBtn = document.getElementById('f-submit-btn');
+      const statusEl = document.getElementById('upload-status-text');
+
+      cropBtn.disabled = true;
+      submitBtn.disabled = true;
+      cropBtn.innerHTML = '<span>Mengompres WebP...</span>';
+      statusEl.textContent = 'Mengompres ke WebP & mengunggah...';
+      statusEl.className = 'text-[11px] font-bold text-amber-600';
+
+      try {
+        const croppedCanvas = activeCropper.getCroppedCanvas({
+          maxWidth: 1200,
+          maxHeight: 1200,
+          imageSmoothingEnabled: true,
+          imageSmoothingQuality: 'high'
+        });
+
+        const webpBlob = await compressCanvasToWebP(croppedCanvas);
+        if (!webpBlob) throw new Error('Gagal mengompres gambar ke WebP');
+
+        const sizeKB = Math.max(1, Math.round(webpBlob.size / 1024));
+        cropBtn.innerHTML = `<span>Upload (${sizeKB} KB)...</span>`;
+
+        const localPreviewUrl = URL.createObjectURL(webpBlob);
+        updateImagePreview(localPreviewUrl);
+        cancelCropper();
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 25000);
+
+        const formData = new FormData();
+        formData.append('file', webpBlob, `poster_${Date.now()}.webp`);
+        formData.append('upload_preset', CLOUDINARY_CONFIG.uploadPreset);
+        formData.append('folder', 'peluangku');
+
+        const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CONFIG.cloudName}/image/upload`, {
+          method: 'POST',
+          body: formData,
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+
+        const data = await res.json();
+        if (!res.ok || !data.secure_url) {
+          throw new Error(data.error?.message || 'Gagal upload ke Cloudinary (cek preset Unsigned)');
+        }
+
+        document.getElementById('f-image-url').value = data.secure_url;
+        updateImagePreview(data.secure_url);
+        statusEl.textContent = `✓ Terupload WebP (${sizeKB} KB)`;
+        statusEl.className = 'text-[11px] font-bold text-emerald-600';
+        showAdminToast(`Poster WebP (${sizeKB} KB) berhasil diunggah!`);
+      } catch (err) {
+        const msg = err.name === 'AbortError' ? 'Koneksi timeout, coba ulangi' : err.message;
+        statusEl.textContent = 'Gagal: ' + msg;
+        statusEl.className = 'text-[11px] font-bold text-red-600';
+        showAdminToast('Gagal upload: ' + msg, '!');
+      } finally {
+        cropBtn.disabled = false;
+        submitBtn.disabled = false;
+        cropBtn.innerHTML = '<i data-lucide="check" class="w-3.5 h-3.5"></i><span>Potong & Upload WebP</span>';
+        lucide.createIcons();
+      }
+    }
+
+    // ==================== AUTH & CRUD SUPABASE ====================
+    async function verifyAdminAccess(user) {
+      if (!sb || !user) return false;
+      const { data, error } = await sb
+        .from('profiles')
+        .select('is_admin')
+        .eq('id', user.id)
+        .maybeSingle();
+      return !error && Boolean(data?.is_admin);
+    }
+
+    async function checkInitialSession() {
+      if (!sb) return;
+      const { data } = await sb.auth.getSession();
+      const user = data?.session?.user;
+      if (user) {
+        const isAdmin = await verifyAdminAccess(user);
+        if (isAdmin) {
+          showDashboard(user);
+        } else {
+          await sb.auth.signOut();
+          showLoginError('Akun ini bukan admin. Ubah kolom is_admin menjadi TRUE di tabel profiles Supabase.');
+        }
+      }
+    }
+
+    function showLoginError(msg) {
+      const box = document.getElementById('login-alert');
+      box.textContent = msg;
+      box.classList.remove('hidden');
+    }
+
+    async function handleAdminLogin(e) {
+      e.preventDefault();
+      if (!sb) return showLoginError('Konfigurasi Supabase di data.js belum diisi.');
+      const btn = document.getElementById('adm-login-btn');
+      const email = document.getElementById('adm-email').value.trim();
+      const password = document.getElementById('adm-pass').value;
+      document.getElementById('login-alert').classList.add('hidden');
+
+      btn.disabled = true;
+      btn.textContent = 'Memeriksa hak akses...';
+
+      const { data, error } = await sb.auth.signInWithPassword({ email, password });
+      if (error) {
+        btn.disabled = false;
+        btn.textContent = 'Masuk ke Dashboard Admin';
+        return showLoginError('Login gagal: ' + error.message);
+      }
+
+      const isAdmin = await verifyAdminAccess(data.user);
+      if (!isAdmin) {
+        await sb.auth.signOut();
+        btn.disabled = false;
+        btn.textContent = 'Masuk ke Dashboard Admin';
+        return showLoginError('Akses ditolak: is_admin pada akun ini masih FALSE di tabel profiles.');
+      }
+
+      btn.disabled = false;
+      btn.textContent = 'Masuk ke Dashboard Admin';
+      showDashboard(data.user);
+    }
+
+    async function handleAdminLogout() {
+      if (sb) await sb.auth.signOut();
+      document.getElementById('admin-dashboard-view').classList.add('hidden');
+      document.getElementById('admin-login-view').classList.remove('hidden');
+    }
+
+    function showDashboard(user) {
+      document.getElementById('admin-login-view').classList.add('hidden');
+      document.getElementById('admin-dashboard-view').classList.remove('hidden');
+      document.getElementById('admin-user-email').textContent = user.email;
+      fetchAdminOpportunities();
+    }
+
+    async function fetchAdminOpportunities() {
+      const { data, error } = await sb
+        .from('opportunities')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        showAdminToast('Gagal memuat data: ' + error.message, '!');
+        return;
+      }
+      adminOpportunities = data || [];
+      document.getElementById('total-opps-count').textContent = adminOpportunities.length;
+      renderAdminList();
+    }
+
+    function renderAdminList() {
+      const container = document.getElementById('admin-opps-list');
+      const q = document.getElementById('admin-search').value.trim().toLowerCase();
+      const cat = document.getElementById('admin-cat-filter').value;
+
+      const filtered = adminOpportunities.filter(item => {
+        const matchCat = cat === 'Semua' || item.category === cat;
+        const matchQ = !q || item.title.toLowerCase().includes(q) || item.organizer.toLowerCase().includes(q);
+        return matchCat && matchQ;
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="col-span-full bg-white rounded-2xl p-10 text-center border border-[#E5E7EB] space-y-2">
+            <p class="font-bold text-sm text-[#111827]">Belum ada data peluang di database</p>
+            <p class="text-xs text-[#6B7280]">Klik tombol <strong>Tambah Peluang Baru</strong> di atas untuk mulai menambahkan data.</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = filtered.map(item => `
+        <div class="bg-white rounded-2xl p-4 border border-[#E5E7EB] flex flex-col justify-between gap-3">
+          <div class="flex gap-3.5">
+            <div class="w-20 h-20 rounded-xl bg-[#111827] overflow-hidden shrink-0 flex items-center justify-center text-white/50 text-[10px]">
+              ${item.image_url ? `<img src="${item.image_url}" class="w-full h-full object-cover" />` : 'SVG'}
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center justify-between gap-2 mb-1">
+                <span class="bg-[#111827] text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full">${escapeHtml(item.category)}</span>
+                ${item.featured ? '<span class="text-[10px] font-extrabold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">★ Pilihan</span>' : ''}
+              </div>
+              <h3 class="font-display font-bold text-sm text-[#111827] line-clamp-1">${escapeHtml(item.title)}</h3>
+              <p class="text-xs text-[#6B7280] truncate mt-0.5">${escapeHtml(item.organizer)}</p>
+            </div>
+          </div>
+
+          <div class="pt-3 border-t border-[#F3F4F6] flex items-center justify-between text-xs">
+            <span class="text-[#6B7280]">Jadwal: <strong class="text-[#111827]">${escapeHtml(item.deadline || formatIndoDate(item.deadline_date))}</strong></span>
+            <div class="flex items-center gap-1.5">
+              <button onclick="openOppFormModal('${item.id}')" class="px-3 py-1.5 rounded-lg bg-[#F3F4F6] hover:bg-gray-200 font-bold text-[#111827] transition">Edit</button>
+              <button onclick="deleteOpportunity('${item.id}')" class="px-3 py-1.5 rounded-lg bg-red-50 hover:bg-red-100 font-bold text-red-600 transition">Hapus</button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function openOppFormModal(id = null) {
+      const modal = document.getElementById('opp-modal');
+      const form = document.getElementById('opp-form');
+      form.reset();
+      cancelCropper();
+      document.getElementById('upload-status-text').textContent = 'Opsional (jika kosong memakai ikon bawaan)';
+      document.getElementById('upload-status-text').className = 'text-[11px] font-semibold text-[#6B7280]';
+
+      if (id) {
+        const item = adminOpportunities.find(o => o.id === id);
+        if (!item) return;
+        document.getElementById('modal-title').textContent = 'Edit Peluang';
+        document.getElementById('f-id').value = item.id;
+        document.getElementById('f-image-url').value = item.image_url || '';
+        updateImagePreview(item.image_url || '');
+        document.getElementById('f-title').value = item.title || '';
+        document.getElementById('f-category').value = item.category || 'Lomba';
+        document.getElementById('f-organizer').value = item.organizer || '';
+        document.getElementById('f-deadline-date').value = item.deadline_date || '';
+        document.getElementById('f-start-date').value = parseStartIsoFromDeadlineLabel(item.deadline, item.deadline_date);
+        syncDateRangeInputs();
+        document.getElementById('f-mode').value = item.mode || 'Online';
+        document.getElementById('f-fee-type').value = item.fee_type || 'Gratis';
+        document.getElementById('f-benefit-short').value = item.benefit_short || '';
+        document.getElementById('f-fee-label').value = item.fee_label || '';
+        document.getElementById('f-register-url').value = item.register_url || '';
+        document.getElementById('f-description').value = item.description || '';
+        document.getElementById('f-requirements').value = (item.requirements || []).join('\n');
+        timelineItems = Array.isArray(item.timeline)
+          ? item.timeline.map(t => ({ stage: t.stage || '', date: t.date || '' }))
+          : [];
+        renderTimelineRows();
+        document.getElementById('f-lvl-s1').checked = (item.level || []).includes('S1');
+        document.getElementById('f-lvl-d3').checked = (item.level || []).includes('D3');
+        document.getElementById('f-featured').checked = Boolean(item.featured);
+        document.getElementById('f-popular').checked = Boolean(item.popular);
+      } else {
+        document.getElementById('modal-title').textContent = 'Tambah Peluang Baru';
+        document.getElementById('f-id').value = '';
+        document.getElementById('f-start-date').value = '';
+        document.getElementById('f-deadline-date').value = '';
+        syncDateRangeInputs();
+        timelineItems = [];
+        renderTimelineRows();
+        updateImagePreview('');
+      }
+
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      lucide.createIcons();
+    }
+
+    function closeOppModal() {
+      cancelCropper();
+      const modal = document.getElementById('opp-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    async function handleSaveOpportunity(e) {
+      e.preventDefault();
+      if (activeCropper) {
+        return showAdminToast('Klik "Potong & Upload WebP" dulu sebelum menyimpan!', '!');
+      }
+
+      const btn = document.getElementById('f-submit-btn');
+      btn.disabled = true;
+      btn.textContent = 'Menyimpan...';
+
+      const existingId = document.getElementById('f-id').value.trim();
+      const title = document.getElementById('f-title').value.trim();
+      const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') + '-' + Date.now().toString().slice(-4);
+      const startDate = document.getElementById('f-start-date').value;
+      const deadlineDate = document.getElementById('f-deadline-date').value;
+
+      const levels = [];
+      if (document.getElementById('f-lvl-s1').checked) levels.push('S1');
+      if (document.getElementById('f-lvl-d3').checked) levels.push('D3');
+
+      const requirements = document.getElementById('f-requirements').value
+        .split('\n')
+        .map(s => s.trim())
+        .filter(Boolean);
+
+      const timeline = timelineItems
+        .map(t => ({ stage: String(t.stage || '').trim(), date: String(t.date || '').trim() }))
+        .filter(t => t.stage && t.date);
+
+      const payload = {
+        id: existingId || slug,
+        title,
+        category: document.getElementById('f-category').value,
+        organizer: document.getElementById('f-organizer').value.trim(),
+        deadline: formatIndoDateRange(startDate, deadlineDate),
+        deadline_date: deadlineDate,
+        days_left: calcDaysLeft(deadlineDate),
+        mode: document.getElementById('f-mode').value,
+        fee_type: document.getElementById('f-fee-type').value,
+        benefit_short: document.getElementById('f-benefit-short').value.trim(),
+        fee_label: document.getElementById('f-fee-label').value.trim(),
+        level: levels.length > 0 ? levels : ['S1', 'D3'],
+        register_url: document.getElementById('f-register-url').value.trim(),
+        image_url: document.getElementById('f-image-url').value.trim(),
+        description: document.getElementById('f-description').value.trim(),
+        requirements,
+        timeline,
+        featured: document.getElementById('f-featured').checked,
+        popular: document.getElementById('f-popular').checked
+      };
+
+      const { error } = await sb.from('opportunities').upsert(payload, { onConflict: 'id' });
+      btn.disabled = false;
+      btn.textContent = 'Simpan ke Database';
+
+      if (error) {
+        return showAdminToast('Gagal menyimpan: ' + error.message, '!');
+      }
+
+      closeOppModal();
+      showAdminToast(existingId ? 'Peluang berhasil diperbarui!' : 'Peluang baru berhasil ditambahkan!');
+      fetchAdminOpportunities();
+    }
+
+    async function deleteOpportunity(id) {
+      if (!confirm('Yakin ingin menghapus peluang ini dari database?')) return;
+      const { error } = await sb.from('opportunities').delete().eq('id', id);
+      if (error) {
+        return showAdminToast('Gagal menghapus: ' + error.message, '!');
+      }
+      showAdminToast('Peluang dihapus dari database', '—');
+      fetchAdminOpportunities();
+    }
+
+    lucide.createIcons();
+    checkInitialSession();
+  </script>
+</body>
+</html>
